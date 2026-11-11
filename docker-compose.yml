@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: foodies-postgres-dev
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: foodies_user
+      POSTGRES_PASSWORD: foodies_password
+      POSTGRES_DB: foodies_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - foodies_pgdata:/var/lib/postgresql/data
+
+volumes:
+  foodies_pgdata:

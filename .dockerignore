@@ -1,0 +1,11 @@
+node_modules
+generated
+uploads/*
+.env
+.env.*
+.git
+.gitignore
+README.md
+HANDOFF.md
+docs
+docker-compose.yml

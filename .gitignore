@@ -1,0 +1,29 @@
+node_modules/
+dist/
+
+# Keep environment variables out of version control
+.env
+.env.*
+!.env.example
+
+# Generated Prisma Client
+/generated/prisma
+generated/
+/prisma/generated/
+
+# Temporary Multer uploads
+uploads/*
+!uploads/.gitkeep
+
+# Local project instructions & agent folders
+/AGENTS.md
+/.agents/
+/.claude/
+/.windsurf/
+/skills-lock.json
+
+# Optional raster export; the ER diagram is stored as SVG
+/docs/erd.png
+
+*.log
+.DS_Store
