@@ -1,7 +1,7 @@
 import multer from "multer";
 import { createHttpError } from "../errors/HttpError.ts";
 
-const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
+export const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 export const imageUpload = multer({
   storage: multer.diskStorage({ destination: "uploads/" }),

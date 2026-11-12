@@ -5,6 +5,7 @@ import { imageUpload } from "../middlewares/imageUpload.ts";
 import { removeTempUpload } from "../middlewares/removeTempUpload.ts";
 import { requireMultipart } from "../middlewares/requireMultipart.ts";
 import { requireRecipeOwner } from "../middlewares/requireRecipeOwner.ts";
+import { validateImageContent } from "../middlewares/validateImageContent.ts";
 import { validateRecipeReferences } from "../middlewares/validateRecipeReferences.ts";
 import { validateRequest } from "../middlewares/validateRequest.ts";
 import { ctrlWrapper } from "../utils/ctrlWrapper.ts";
@@ -18,6 +19,7 @@ recipeRouter.post(
   requireMultipart,
   imageUpload.single("thumb"),
   removeTempUpload,
+  validateImageContent,
   validateRequest({ body: CreateRecipeSchema }),
   validateRecipeReferences,
   ctrlWrapper(recipeController.createRecipe),
