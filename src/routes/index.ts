@@ -1,5 +1,5 @@
 import { Router } from "express";
-import testimonialsRouter from "./testimonials.ts";
+import testimonialsRouter from "./testimonialsRouter.ts";
 
 const apiRouter = Router();
 
