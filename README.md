@@ -49,14 +49,24 @@ Seed keeps source IDs and text values, resolves recipe category/area names to th
 
 Create `.env` locally based on `.env.example` (never commit `.env`):
 
-The example defaults to an isolated local database:
+The `.env.example` file contains Neon placeholders. For local Docker development, replace `DATABASE_URL` in your local `.env` with:
 
 ```dotenv
-POSTGRES_PORT=55432
-DATABASE_URL="postgresql://foodies_user:foodies_password@localhost:55432/foodies_db"
+DATABASE_URL="postgresql://foodies_user:foodies_password@localhost:5432/foodies_db"
 ```
 
-Start PostgreSQL with `docker compose up -d --wait postgres`. The database is bound to localhost and persists in the project volume. Stop it with `docker compose down`; this preserves the data. If you change `POSTGRES_PORT`, also update the port in `DATABASE_URL`. Local Docker PostgreSQL does not need Neon SSL parameters.
+Leave `DIRECT_URL` unset for local Docker; it is commented out in `.env.example`. Start PostgreSQL with `docker compose up -d postgres`. The shared Compose configuration uses port `5432` and persists data in the project volume. Stop it with `docker compose down`; this preserves the data. Local Docker PostgreSQL does not need Neon SSL parameters.
+
+If port `5432` is occupied on your computer, use a local `docker-compose.override.yml` instead of changing the shared Compose file. With Docker Compose 2.24.4 or later, [`!override`](https://docs.docker.com/reference/compose-file/merge/#replace-value) can replace the published port:
+
+```yaml
+services:
+  postgres:
+    ports: !override
+      - "127.0.0.1:55432:5432"
+```
+
+Set the same port in your local `DATABASE_URL`. Keep the override local by adding `/docker-compose.override.yml` to `.git/info/exclude`. Compose automatically loads it alongside `docker-compose.yml`.
 
 For the shared Neon dev environment, set both connection strings there:
 
@@ -67,7 +77,7 @@ DIRECT_URL="postgresql://<user>:<password>@<direct-host>/<database>?sslmode=requ
 
 - `DATABASE_URL` is for regular backend Prisma Client queries; use the Neon **pooled** endpoint (host contains `-pooler`).
 - `DIRECT_URL` is for Prisma CLI migrations and the CSV seed; use the Neon **direct** endpoint (without `-pooler`).
-- The project uses `prisma7.config.ts`, with `datasource.url` set to `process.env.DIRECT_URL ?? process.env.DATABASE_URL` and `migrations.seed` set to `"tsx prisma/seed.ts"`. The installed Prisma 7.10.1 loader supports this filename and finds it without `--config`.
+- The project uses `prisma.config.ts`, with `datasource.url` set to `process.env.DIRECT_URL ?? process.env.DATABASE_URL` and `migrations.seed` set to `"tsx prisma/seed.ts"`.
 - The existing seed reads `DIRECT_URL` (or falls back to `DATABASE_URL`).
 
 **Do not post connection strings in public channels or include them in Git commits.** Share credentials with the backend maintainers privately through your team's approved secure channel.
@@ -76,13 +86,14 @@ DIRECT_URL="postgresql://<user>:<password>@<direct-host>/<database>?sslmode=requ
 
 The database files have already been transferred into this repository, and the required dependencies and npm scripts are present. Keep `prisma`, `@prisma/client`, and `@prisma/adapter-pg` at **7.10.1**.
 
-Run the commands from the repository root with Docker Desktop (or Docker Engine with Compose) running. If `.env` does not exist, copy `.env.example` to `.env` (`Copy-Item .env.example .env` in PowerShell or `cp .env.example .env` in Bash). For local development, keep the example's local `DATABASE_URL` and leave `DIRECT_URL` unset.
+Run the commands from the repository root with Docker Desktop (or Docker Engine with Compose) running. If `.env` does not exist, copy `.env.example` to `.env` (`Copy-Item .env.example .env` in PowerShell or `cp .env.example .env` in Bash). For local development, set `DATABASE_URL` to the local Docker connection shown above and leave `DIRECT_URL` unset.
 
 Install dependencies, start PostgreSQL, apply migrations, and import the CSV data:
 
 ```bash
 npm ci
-docker compose up -d --wait postgres
+docker compose up -d postgres
+docker compose exec postgres sh -c 'until pg_isready -U foodies_user -d foodies_db; do sleep 1; done'
 npx prisma validate
 npm run prisma:generate
 npm run prisma:deploy
@@ -109,7 +120,7 @@ npm run prisma:deploy
 
 Use the same command to apply future committed migrations to an existing database.
 
-When changing the schema during development, first target local PostgreSQL (`DATABASE_URL` from `.env.example`, with `DIRECT_URL` unset), edit `prisma/schema.prisma`, and create a new migration:
+When changing the schema during development, first target local PostgreSQL (the local Docker `DATABASE_URL` shown above, with `DIRECT_URL` unset), edit `prisma/schema.prisma`, and create a new migration:
 
 ```bash
 npm run prisma:migrate -- --name describe_change

@@ -1,20 +1,16 @@
 services:
   postgres:
     image: postgres:16-alpine
+    container_name: foodies-postgres-dev
     restart: unless-stopped
     environment:
       POSTGRES_USER: foodies_user
       POSTGRES_PASSWORD: foodies_password
       POSTGRES_DB: foodies_db
     ports:
-      - "127.0.0.1:${POSTGRES_PORT:-55432}:5432"
+      - "5432:5432"
     volumes:
       - foodies_pgdata:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U foodies_user -d foodies_db"]
-      interval: 5s
-      timeout: 3s
-      retries: 10
 
 volumes:
   foodies_pgdata:
