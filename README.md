@@ -166,6 +166,16 @@ npx prisma migrate status
 
 The generated Prisma Client is output to `generated/prisma/` by the configured `prisma-client` generator. It should be regenerated after schema changes; do not rely on committing generated client code.
 
+## Recipe endpoints
+
+`GET /api/recipes` accepts `category` (ID or exact name; `all` / `всі` means all categories), `ingredient` (ID), `area` (ID or exact name), `page` (default 1), and `limit` (default 12, maximum 50). Filters are combined with AND. Responses use `{ items, total, page, limit, totalPages }`; an empty result has `totalPages: 1`, matching the shared pagination helper.
+
+`GET /api/recipes/popular` returns an array of cards ordered by favorite count descending; `limit` defaults to 4 and is capped at 50. Each card includes `id`, `title`, `description`, `thumb`, `time`, `owner: { id, name, avatar }`, and `isFavorite`. Full parameter and response schemas are available in Swagger at `/api-docs/`.
+
+Both endpoints allow guests. Optional authentication uses an HS256 access token in `Authorization: Bearer <token>` or the `accessToken` cookie, with a string user ID in `sub`, `type: "access"`, and a required expiry (`exp`). The verified subject is available as `req.user.sub`. A supplied Authorization header takes precedence over the cookie. Invalid or expired tokens, refresh tokens used as access tokens, and tokens for deleted users return 401. Guest cards always have `isFavorite: false`. This middleware contract must be shared with the authentication module.
+
+Run `npm run test:recipes` with local PostgreSQL running. The integration tests use `.env`'s local `DATABASE_URL` (or `TEST_DATABASE_URL`), create a separate temporary database, and drop it afterward. They do not reset the development database or use Neon.
+
 ## Version control
 
 Commit `prisma/schema.prisma`, `prisma/migrations/` including `migration_lock.toml`, `prisma/seed.ts`, `prisma/data/*.csv`, Prisma config, `package.json`, `package-lock.json`, `.env.example`, and the documentation. Do not commit environment files with credentials, generated client artifacts, or `node_modules`.

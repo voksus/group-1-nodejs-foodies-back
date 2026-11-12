@@ -11,7 +11,15 @@ import apiRouter from "./routes/index.ts";
 
 const app = express();
 
-app.use(pinoHttp());
+app.use(
+  pinoHttp({
+    redact: [
+      "req.headers.authorization",
+      "req.headers.cookie",
+      'res.headers["set-cookie"]',
+    ],
+  }),
+);
 
 app.use(
   cors({
