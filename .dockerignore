@@ -6,6 +6,6 @@ uploads/*
 .git
 .gitignore
 README.md
-HANDOFF.md
 docs
 docker-compose.yml
+docker-compose.override.yml
