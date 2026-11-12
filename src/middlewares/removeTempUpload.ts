@@ -14,7 +14,7 @@ export const removeTempUpload = (req: Request, res: Response, next: NextFunction
       removed = true;
 
       void unlink(filePath).catch((error: unknown) => {
-        console.warn("Failed to remove temporary upload:", error);
+        req.log.warn({ err: error }, "Failed to remove temporary upload");
       });
     };
 

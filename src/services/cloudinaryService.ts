@@ -1,5 +1,6 @@
 import { v2 as cloudinary } from "cloudinary";
 import { env } from "../config/env.ts";
+import { logger } from "../logger.ts";
 
 cloudinary.config({
   cloud_name: env.CLOUDINARY_CLOUD_NAME,
@@ -26,6 +27,6 @@ export const destroyImage = async (publicId: string): Promise<void> => {
   try {
     await cloudinary.uploader.destroy(publicId, { resource_type: "image" });
   } catch (error: unknown) {
-    console.warn(`Failed to remove image ${publicId}:`, error);
+    logger.warn({ err: error, publicId }, "Failed to remove image");
   }
 };

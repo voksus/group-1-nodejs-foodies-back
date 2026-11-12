@@ -6,13 +6,14 @@ import swaggerUi from "swagger-ui-express";
 import { env } from "./config/env.ts";
 import { errorHandler } from "./middlewares/errorHandler.ts";
 import { notFoundHandler } from "./middlewares/notFoundHandler.ts";
+import { logger } from "./logger.ts";
 import { generateOpenApiDocument } from "./openapi.ts";
 import "./openapi/recipeOpenapi.ts";
 import apiRouter from "./routes/index.ts";
 
 const app = express();
 
-app.use(pinoHttp());
+app.use(pinoHttp({ logger }));
 
 app.use(
   cors({

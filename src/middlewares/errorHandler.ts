@@ -5,7 +5,7 @@ import { HttpError } from "../errors/HttpError.ts";
 
 export const errorHandler = (
   err: unknown,
-  _req: Request,
+  req: Request,
   res: Response,
   _next: NextFunction,
 ): void => {
@@ -64,7 +64,7 @@ export const errorHandler = (
     return;
   }
 
-  console.error("Unhandled error:", err);
+  req.log.error({ err }, "Unhandled error");
 
   res.status(500).json({
     message: "Internal Server Error",
