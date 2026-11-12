@@ -1,4 +1,5 @@
 import { Router } from "express";
+import recipeRouter from "./recipeRoutes.ts";
 
 const apiRouter = Router();
 
@@ -10,5 +11,6 @@ const apiRouter = Router();
 // [BE-05] apiRouter.use('/testimonials', testimonialsRouter);
 // [BE-06] / [BE-07] / [BE-08] / [BE-09] apiRouter.use('/recipes', recipesRouter);
 // [BE-10] apiRouter.use('/users', usersRouter);
+apiRouter.use("/recipes", recipeRouter);
 
 export default apiRouter;

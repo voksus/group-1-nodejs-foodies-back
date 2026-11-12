@@ -12,6 +12,7 @@ export const errorHandler = (
   if (err instanceof HttpError) {
     res.status(err.status).json({
       message: err.message,
+      ...(err.errors && { errors: err.errors }),
     });
     return;
   }
@@ -48,6 +49,19 @@ export const errorHandler = (
       });
       return;
     }
+    if (prismaCode === "P2003") {
+      res.status(400).json({
+        message: "Referenced record does not exist",
+      });
+      return;
+    }
+  }
+
+  if ((err as { type?: string } | null)?.type === "entity.parse.failed") {
+    res.status(400).json({
+      message: "Invalid JSON in request body",
+    });
+    return;
   }
 
   console.error("Unhandled error:", err);
