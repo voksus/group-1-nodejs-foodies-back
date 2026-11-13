@@ -12,7 +12,16 @@ import apiRouter from "./routes/index.ts";
 
 const app = express();
 
-app.use(pinoHttp({ logger }));
+app.use(
+  pinoHttp({
+    logger,
+    redact: [
+      "req.headers.authorization",
+      "req.headers.cookie",
+      'res.headers["set-cookie"]',
+    ],
+  }),
+);
 
 app.use(
   cors({
