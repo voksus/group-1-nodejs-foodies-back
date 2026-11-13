@@ -28,20 +28,12 @@ const ingredientsFieldSchema = z
       ),
   );
 
-const cookingTimeSchema = z.coerce
-  .number()
-  .int()
-  .min(10)
-  .max(1440)
-  .refine(
-    (minutes) => minutes % 10 === 0,
-    "Cooking time must be a multiple of 10",
-  );
+const cookingTimeSchema = z.coerce.number().int().min(1).max(1440);
 
 export const CreateRecipeSchema = z.object({
-  title: z.string().trim().min(1).max(255),
-  description: z.string().trim().min(1).max(400),
-  instructions: z.string().trim().min(1).max(5000),
+  title: z.string().trim().min(3).max(100),
+  description: z.string().trim().min(1).max(200),
+  instructions: z.string().trim().min(1).max(1000),
   categoryId: z.string().min(1).max(36),
   areaId: z.string().min(1).max(36),
   time: cookingTimeSchema,

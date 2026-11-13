@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { Prisma } from "../../generated/prisma/client.ts";
 import { prisma } from "../db.ts";
-import type { CreateRecipeInput } from "../validators/recipeValidator.ts";
+import type { CreateRecipeInput } from "../schemas/recipesSchemas.ts";
 import { destroyImage, uploadImage } from "./cloudinaryService.ts";
 
 const recipeImagePublicId = (recipeId: string): string => `recipes/${recipeId}`;

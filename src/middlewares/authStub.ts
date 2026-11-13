@@ -5,7 +5,7 @@ import { createHttpError } from "../errors/HttpError.ts";
 declare global {
   namespace Express {
     interface Request {
-      auth: { userId: string };
+      user: { id: string };
     }
   }
 }
@@ -24,6 +24,6 @@ export const authStub = (
     return;
   }
 
-  req.auth = { userId };
+  req.user = { id: userId };
   next();
 };

@@ -41,7 +41,7 @@ const CreateRecipeMultipartSchema = registry.register(
     areaId: z.string().openapi({ example: "6462a8f74c3d0ddd28897fcd" }),
     time: z.string().openapi({
       example: "40",
-      description: "Minutes, 10–1440, multiple of 10",
+      description: "Minutes, 1–1440",
     }),
     ingredients: z.string().openapi({
       example: '[{"id":"6462a8f74c3d0ddd28897fcd","measure":"400 g"}]',
