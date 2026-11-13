@@ -10,6 +10,9 @@ export const requireRecipeOwner = ctrlWrapper(
     if (ownerId === null) {
       throw createHttpError(404, "Recipe not found");
     }
+    if (!req.user) {
+      throw createHttpError(401, "Authentication required");
+    }
     if (ownerId !== req.user.id) {
       throw createHttpError(403, "Access denied");
     }

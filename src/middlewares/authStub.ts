@@ -2,14 +2,6 @@ import type { NextFunction, Request, Response } from "express";
 import { env } from "../config/env.ts";
 import { createHttpError } from "../errors/HttpError.ts";
 
-declare global {
-  namespace Express {
-    interface Request {
-      user: { id: string };
-    }
-  }
-}
-
 // TODO [BE-03]: replace with the real JWT auth middleware. Until then this stub trusts the
 // X-User-Id header, so it always rejects in production.
 export const authStub = (
@@ -24,6 +16,6 @@ export const authStub = (
     return;
   }
 
-  req.user = { id: userId };
+  req.user = { id: userId, sub: userId };
   next();
 };
