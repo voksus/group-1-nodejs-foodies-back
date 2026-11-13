@@ -591,3 +591,390 @@ test("Swagger includes query defaults, bounds, nullable cards and optional authe
   assert.equal(popularSchema.type, "array");
   assert.equal((await fetch(`${baseUrl}/api-docs/`)).status, 200);
 });
+
+test("private favorite endpoints", async (t) => {
+  const userId = randomUUID();
+  const uuidRecipeId = randomUUID();
+  const headers = bearer(userId);
+  const mutation = async (
+    method: "POST" | "DELETE",
+    id: string,
+    authHeaders?: HeadersInit,
+  ) => {
+    const response = await fetch(`${baseUrl}/api/recipes/${id}/favorite`, {
+      method,
+      headers: authHeaders,
+      signal: AbortSignal.timeout(10000),
+    });
+    return {
+      status: response.status,
+      body: (await response.json()) as { message: string },
+    };
+  };
+
+  try {
+    await prisma.user.create({
+      data: {
+        id: userId,
+        name: "Favorites user",
+        email: `${userId}@example.test`,
+        password: "test-only",
+      },
+    });
+    await prisma.recipe.create({
+      data: {
+        id: uuidRecipeId,
+        title: "UUID recipe",
+        ownerId: ids.owner,
+        categoryId: ids.seafood,
+        areaId: ids.italian,
+        instructions: "Prepare the ingredients.",
+      },
+    });
+
+    await t.test("all routes require a valid access token", async () => {
+      for (const authHeaders of [
+        undefined,
+        { Authorization: "Bearer invalid" },
+        { Authorization: `Bearer ${token(userId, { expiresIn: -1 })}` },
+        { Authorization: `Bearer ${token(randomUUID())}` },
+        {
+          Authorization: `Bearer ${jwt.sign({ id: userId, type: "refresh" }, secret, { expiresIn: "7d" })}`,
+        },
+      ]) {
+        assert.equal(
+          (await get("/api/recipes/favorites", authHeaders)).status,
+          401,
+        );
+        for (const method of ["POST", "DELETE"] as const) {
+          assert.equal(
+            (await mutation(method, recipeId(0), authHeaders)).status,
+            401,
+          );
+        }
+      }
+    });
+
+    await t.test(
+      "an empty list uses pagination defaults of 1 and 9",
+      async () => {
+        const { status, body } = await get("/api/recipes/favorites", headers);
+        assert.equal(status, 200);
+        assert.deepEqual(body, {
+          items: [],
+          total: 0,
+          page: 1,
+          limit: 9,
+          totalPages: 1,
+        });
+      },
+    );
+
+    await prisma.favorite.createMany({
+      data: Array.from({ length: 12 }, (_, i) => ({
+        userId,
+        recipeId: recipeId(i),
+      })),
+    });
+
+    await t.test(
+      "pagination returns only the current user's cards without duplicates",
+      async () => {
+        const { status, body } = await get("/api/recipes/favorites", headers);
+        assert.equal(status, 200);
+        assert.equal(body.total, 12);
+        assert.equal(body.limit, 9);
+        assert.equal(body.totalPages, 2);
+        assert.equal(body.items.length, 9);
+        const { PaginatedRecipesSchema } = await import(
+          "../src/schemas/recipesSchemas.ts"
+        );
+        PaginatedRecipesSchema.parse(body);
+        assert(
+          body.items.every(
+            (card) => card.isFavorite && card.owner.id === ids.owner,
+          ),
+        );
+        const { body: second } = await get(
+          "/api/recipes/favorites?page=2",
+          headers,
+        );
+        assert.deepEqual(
+          [...body.items, ...second.items].map((card) => card.id),
+          Array.from({ length: 12 }, (_, i) => recipeId(11 - i)),
+        );
+        const { body: alice } = await get(
+          "/api/recipes/favorites",
+          bearer(ids.alice),
+        );
+        assert.deepEqual(
+          alice.items.map((card) => card.id),
+          [3, 2, 0].map(recipeId),
+        );
+        for (const page of [3, Number.MAX_SAFE_INTEGER]) {
+          const { body: empty } = await get(
+            `/api/recipes/favorites?page=${page}`,
+            headers,
+          );
+          assert.equal(empty.total, 12);
+          assert.equal(empty.page, page);
+          assert.deepEqual(empty.items, []);
+        }
+      },
+    );
+
+    await t.test(
+      "favorite pagination rejects invalid values and accepts the shared maximum",
+      async () => {
+        for (const query of [
+          "page=0",
+          "page=no",
+          "page=1.5",
+          "page[]=2",
+          "limit=0",
+          "limit=101",
+          "limit=",
+          "limit[]=9",
+        ]) {
+          assert.equal(
+            (await get(`/api/recipes/favorites?${query}`, headers)).status,
+            400,
+            query,
+          );
+        }
+        const { body } = await get("/api/recipes/favorites?limit=100", headers);
+        assert.equal(body.limit, 100);
+        assert.equal(body.items.length, 12);
+      },
+    );
+
+    await t.test(
+      "adding an existing recipe is idempotent even for concurrent requests",
+      async () => {
+        const target = recipeId(13);
+        const responses = await Promise.all(
+          Array.from({ length: 5 }, () => mutation("POST", target, headers)),
+        );
+        for (const response of responses) {
+          assert.equal(response.status, 200);
+          assert.deepEqual(response.body, {
+            message: "Recipe added to favorites",
+          });
+        }
+        assert.equal(
+          await prisma.favorite.count({ where: { userId, recipeId: target } }),
+          1,
+        );
+        const { body } = await get("/api/recipes?limit=100", headers);
+        assert.equal(
+          body.items.find((card) => card.id === target)?.isFavorite,
+          true,
+        );
+        const { body: alice } = await get(
+          "/api/recipes?limit=100",
+          bearer(ids.alice),
+        );
+        assert.equal(
+          alice.items.find((card) => card.id === target)?.isFavorite,
+          false,
+        );
+        assert.equal(
+          (await get("/api/recipes/favorites", headers)).body.total,
+          13,
+        );
+      },
+    );
+
+    await t.test(
+      "POST returns 404 for missing recipes and validates IDs",
+      async () => {
+        for (const id of ["f".repeat(24), randomUUID()]) {
+          const { status, body } = await mutation("POST", id, headers);
+          assert.equal(status, 404);
+          assert.deepEqual(body, { message: "Recipe not found" });
+          assert.equal(
+            await prisma.favorite.count({ where: { userId, recipeId: id } }),
+            0,
+          );
+        }
+        for (const method of ["POST", "DELETE"] as const) {
+          for (const id of ["invalid", "x".repeat(24)]) {
+            assert.equal((await mutation(method, id, headers)).status, 400);
+          }
+        }
+      },
+    );
+
+    await t.test(
+      "a recipe deleted during POST returns 404 instead of a foreign-key error",
+      async () => {
+        const raceRecipeId = randomUUID();
+        await prisma.recipe.create({
+          data: {
+            id: raceRecipeId,
+            title: "Recipe being deleted",
+            ownerId: ids.owner,
+            categoryId: ids.seafood,
+            areaId: ids.italian,
+            instructions: "Prepare the ingredients.",
+          },
+        });
+        const deleting = new pg.Client({
+          connectionString: databaseUrl.toString(),
+        });
+        await deleting.connect();
+        let adding: ReturnType<typeof mutation> | undefined;
+        try {
+          await deleting.query("BEGIN");
+          const { rows } = await deleting.query<{ pid: number }>(
+            "SELECT pg_backend_pid() AS pid",
+          );
+          await deleting.query("DELETE FROM recipes WHERE id = $1", [
+            raceRecipeId,
+          ]);
+          adding = mutation("POST", raceRecipeId, headers);
+          let blocked = false;
+          const deadline = Date.now() + 5000;
+          while (Date.now() < deadline) {
+            const result = await admin.query(
+              "SELECT 1 FROM pg_stat_activity WHERE datname = $1 AND $2 = ANY(pg_blocking_pids(pid))",
+              [databaseName, rows[0].pid],
+            );
+            if (result.rowCount) {
+              blocked = true;
+              break;
+            }
+            await new Promise((resolve) => setTimeout(resolve, 25));
+          }
+          assert(
+            blocked,
+            "Favorite insertion should wait for the concurrent recipe deletion",
+          );
+          await deleting.query("COMMIT");
+          const result = await adding;
+          assert.equal(result.status, 404);
+          assert.deepEqual(result.body, { message: "Recipe not found" });
+          assert.equal(
+            await prisma.favorite.count({ where: { recipeId: raceRecipeId } }),
+            0,
+          );
+        } finally {
+          await deleting.query("ROLLBACK");
+          await deleting.end();
+          if (adding) await adding;
+          await prisma.recipe.deleteMany({ where: { id: raceRecipeId } });
+        }
+      },
+    );
+
+    await t.test(
+      "UUID recipe IDs and id-only cookie tokens work on all private routes",
+      async () => {
+        const cookie = {
+          Cookie: `accessToken=${jwt.sign({ id: userId }, secret, { expiresIn: "15m" })}`,
+        };
+        assert.equal(
+          (await mutation("POST", uuidRecipeId, cookie)).status,
+          200,
+        );
+        const { body } = await get("/api/recipes/favorites?limit=100", cookie);
+        assert(
+          body.items.some(
+            (card) => card.id === uuidRecipeId && card.isFavorite,
+          ),
+        );
+        assert.equal(
+          (await mutation("DELETE", uuidRecipeId, cookie)).status,
+          200,
+        );
+      },
+    );
+
+    await t.test(
+      "DELETE is idempotent and preserves other users' favorites and the recipe",
+      async () => {
+        for (const target of [
+          recipeId(0),
+          recipeId(0),
+          "f".repeat(24),
+          randomUUID(),
+        ]) {
+          const { status, body } = await mutation("DELETE", target, headers);
+          assert.equal(status, 200);
+          assert.deepEqual(body, { message: "Recipe removed from favorites" });
+        }
+        assert.equal(
+          await prisma.favorite.count({
+            where: { userId, recipeId: recipeId(0) },
+          }),
+          0,
+        );
+        assert.equal(
+          await prisma.favorite.count({
+            where: { userId: ids.alice, recipeId: recipeId(0) },
+          }),
+          1,
+        );
+        assert.equal(
+          await prisma.recipe.count({ where: { id: recipeId(0) } }),
+          1,
+        );
+        const { body } = await get("/api/recipes?limit=100", headers);
+        assert.equal(
+          body.items.find((card) => card.id === recipeId(0))?.isFavorite,
+          false,
+        );
+        const { body: favorites } = await get(
+          "/api/recipes/favorites?limit=100",
+          headers,
+        );
+        assert.equal(favorites.total, 12);
+        assert(!favorites.items.some((card) => card.id === recipeId(0)));
+      },
+    );
+
+    await t.test(
+      "all three Swagger operations document required authentication and responses",
+      async () => {
+        const { generateOpenApiDocument } = await import("../src/openapi.ts");
+        const doc = generateOpenApiDocument();
+        const list = doc.paths["/api/recipes/favorites"].get;
+        const add = doc.paths["/api/recipes/{id}/favorite"].post;
+        const remove = doc.paths["/api/recipes/{id}/favorite"].delete;
+        assert(list && add && remove);
+        for (const operation of [list, add, remove]) {
+          assert.deepEqual(operation.security, [
+            { bearerAuth: [] },
+            { cookieAuth: [] },
+          ]);
+          for (const status of [200, 400, 401, 500])
+            assert(operation.responses[status]);
+        }
+        assert(add.responses[404]);
+        const params = list.parameters?.filter((param) => "name" in param);
+        assert(params);
+        assert.deepEqual(params.map((param) => param.name).sort(), [
+          "limit",
+          "page",
+        ]);
+        const limit = params.find((param) => param.name === "limit")?.schema;
+        const page = params.find((param) => param.name === "page")?.schema;
+        assert(limit && !("$ref" in limit) && page && !("$ref" in page));
+        assert.equal(limit.default, 9);
+        assert.equal(limit.maximum, 100);
+        assert.equal(page.default, 1);
+        for (const operation of [add, remove]) {
+          const id = operation.parameters?.find(
+            (param) => "name" in param && param.name === "id",
+          );
+          assert(id && "in" in id);
+          assert.equal(id.in, "path");
+          assert.equal(id.required, true);
+        }
+      },
+    );
+  } finally {
+    await prisma.recipe.deleteMany({ where: { id: uuidRecipeId } });
+    await prisma.user.deleteMany({ where: { id: userId } });
+  }
+});

@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "../utils/zod.ts";
 
 export const IdSchema = z.union([z.string().regex(/^[a-f\d]{24}$/i), z.uuid()]);
 
