@@ -15,18 +15,18 @@ Database setup for the Foodies educational full-stack project: **PostgreSQL 16 i
 
 The database contains **10 application tables**:
 
-| Table | Purpose | Initial records |
-| --- | --- | ---: |
-| `areas` | Regions of origin | 27 |
-| `categories` | Recipe categories | 15 |
-| `ingredients` | Ingredient catalog | 574 |
-| `users` | User profiles and authentication fields | 3 |
-| `testimonials` | User testimonials | 3 |
-| `recipes` | Recipes | 285 |
-| `recipe_ingredients` | Recipe–ingredient relationships and measures | 2,990 |
-| `favorites` | User favorite recipes | 0 |
-| `follows` | User-to-user subscriptions | 0 |
-| `refresh_tokens` | Refresh tokens for user sessions, with expiry | 0 |
+| Table                | Purpose                                       | Initial records |
+| -------------------- | --------------------------------------------- | --------------: |
+| `areas`              | Regions of origin                             |              27 |
+| `categories`         | Recipe categories                             |              15 |
+| `ingredients`        | Ingredient catalog                            |             574 |
+| `users`              | User profiles and authentication fields       |               3 |
+| `testimonials`       | User testimonials                             |               3 |
+| `recipes`            | Recipes                                       |             285 |
+| `recipe_ingredients` | Recipe–ingredient relationships and measures  |           2,990 |
+| `favorites`          | User favorite recipes                         |               0 |
+| `follows`            | User-to-user subscriptions                    |               0 |
+| `refresh_tokens`     | Refresh tokens for user sessions, with expiry |               0 |
 
 See the [ER diagram](docs/erd.svg) and [editable Mermaid diagram](docs/erd.md).
 
