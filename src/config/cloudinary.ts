@@ -1,5 +1,5 @@
-import { v2 as cloudinary } from 'cloudinary';
-import { env } from './env.js'; // або './env.ts' залежно від tsconfig
+import { v2 as cloudinary } from "cloudinary";
+import { env } from "./env.js"; // або './env.ts' залежно від tsconfig
 
 cloudinary.config({
   cloud_name: env.CLOUDINARY_CLOUD_NAME,

@@ -8,48 +8,25 @@ datasource db {
 }
 
 model User {
-<<<<<<< HEAD
-  id        String   @id @db.VarChar(24)
-  name      String   @db.VarChar(255)
-  email     String   @unique @db.VarChar(255)
-  password  String?  @db.Text
-=======
   id        String   @id @default(uuid()) @db.VarChar(36)
   name      String   @db.VarChar(255)
   email     String   @unique @db.VarChar(255)
   password  String   @db.Text
->>>>>>> main
   avatar    String?  @db.Text
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-<<<<<<< HEAD
-  recipes      Recipe[]
-  refreshToken RefreshToken?
-  favorites    Favorite[]
-  following    Follow[]      @relation("UserFollowing")
-  followers    Follow[]      @relation("UserFollowers")
-  testimonials Testimonial[]
-=======
   recipes       Recipe[]
   refreshTokens RefreshToken[]
   favorites     Favorite[]
   following     UserFollow[]   @relation("UserFollowing")
   followers     UserFollow[]   @relation("UserFollowers")
   testimonials  Testimonial[]
->>>>>>> main
 
   @@map("users")
 }
 
 model RefreshToken {
-<<<<<<< HEAD
-  id     Int    @id @default(autoincrement())
-  token  String @unique @db.Text
-  userId String @unique @map("user_id") @db.VarChar(24)
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-=======
   id        Int      @id @default(autoincrement())
   token     String   @unique @db.Text
   userId    String   @map("user_id") @db.VarChar(36)
@@ -58,32 +35,21 @@ model RefreshToken {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
->>>>>>> main
   @@map("refresh_tokens")
 }
 
 model Category {
-<<<<<<< HEAD
-  id      String   @id @db.VarChar(24)
-  name    String   @unique @db.VarChar(100)
-  recipes Recipe[]
-=======
   id          String   @id @default(uuid()) @db.VarChar(36)
   name        String   @unique @db.VarChar(100)
   description String?  @db.Text
   thumb       String?  @db.Text
   recipes     Recipe[]
->>>>>>> main
 
   @@map("categories")
 }
 
 model Area {
-<<<<<<< HEAD
-  id      String   @id @db.VarChar(24)
-=======
   id      String   @id @default(uuid()) @db.VarChar(36)
->>>>>>> main
   name    String   @unique @db.VarChar(255)
   recipes Recipe[]
 
@@ -91,45 +57,26 @@ model Area {
 }
 
 model Ingredient {
-<<<<<<< HEAD
-  id          String             @id @db.VarChar(24)
-  name        String             @db.VarChar(255)
-  description String?            @db.Text
-  img         String?            @db.Text
-  recipes     RecipeIngredient[]
-=======
   id      String             @id @default(uuid()) @db.VarChar(36)
   name    String             @db.VarChar(255)
   desc    String?            @map("description") @db.Text
   img     String?            @db.Text
   recipes RecipeIngredient[]
->>>>>>> main
 
   @@map("ingredients")
 }
 
 model Recipe {
-<<<<<<< HEAD
-  id           String   @id @db.VarChar(24)
-  title        String   @db.VarChar(255)
-  categoryId   String   @map("category_id") @db.VarChar(24)
-  areaId       String   @map("area_id") @db.VarChar(24)
-=======
   id           String   @id @default(uuid()) @db.VarChar(36)
   title        String   @db.VarChar(255)
   categoryId   String   @map("category_id") @db.VarChar(36)
   areaId       String   @map("area_id") @db.VarChar(36)
->>>>>>> main
   instructions String   @db.Text
   description  String?  @db.Text
   thumb        String?  @db.Text
   preview      String?  @db.Text
   time         Int?
-<<<<<<< HEAD
-  ownerId      String   @map("owner_id") @db.VarChar(24)
-=======
   ownerId      String   @map("owner_id") @db.VarChar(36)
->>>>>>> main
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
@@ -146,13 +93,8 @@ model Recipe {
 }
 
 model RecipeIngredient {
-<<<<<<< HEAD
-  recipeId     String  @map("recipe_id") @db.VarChar(24)
-  ingredientId String  @map("ingredient_id") @db.VarChar(24)
-=======
   recipeId     String  @map("recipe_id") @db.VarChar(36)
   ingredientId String  @map("ingredient_id") @db.VarChar(36)
->>>>>>> main
   measure      String? @db.VarChar(100)
 
   recipe     Recipe     @relation(fields: [recipeId], references: [id], onDelete: Cascade)
@@ -164,13 +106,8 @@ model RecipeIngredient {
 }
 
 model Favorite {
-<<<<<<< HEAD
-  userId   String @map("user_id") @db.VarChar(24)
-  recipeId String @map("recipe_id") @db.VarChar(24)
-=======
   userId   String @map("user_id") @db.VarChar(36)
   recipeId String @map("recipe_id") @db.VarChar(36)
->>>>>>> main
 
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   recipe Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
@@ -180,15 +117,9 @@ model Favorite {
   @@map("favorites")
 }
 
-<<<<<<< HEAD
-model Follow {
-  followerId  String @map("follower_id") @db.VarChar(24)
-  followingId String @map("following_id") @db.VarChar(24)
-=======
 model UserFollow {
   followerId  String @map("follower_id") @db.VarChar(36)
   followingId String @map("following_id") @db.VarChar(36)
->>>>>>> main
 
   follower  User @relation("UserFollowing", fields: [followerId], references: [id], onDelete: Cascade)
   following User @relation("UserFollowers", fields: [followingId], references: [id], onDelete: Cascade)
@@ -199,13 +130,8 @@ model UserFollow {
 }
 
 model Testimonial {
-<<<<<<< HEAD
-  id          String @id @db.VarChar(24)
-  ownerId     String @map("owner_id") @db.VarChar(24)
-=======
   id          String @id @default(uuid()) @db.VarChar(36)
   ownerId     String @map("owner_id") @db.VarChar(36)
->>>>>>> main
   testimonial String @db.Text
   owner       User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
 

@@ -1,48 +1,53 @@
-import express from "express";
-import cors from "cors";
 import cookieParser from "cookie-parser";
-import swaggerUi from "swagger-ui-express";
-import userRouter from './routes/userRouter.js';
+import cors from "cors";
+import express from "express";
 import { pinoHttp } from "pino-http";
+import swaggerUi from "swagger-ui-express";
 import { env } from "./config/env.ts";
+import { errorHandler } from "./middlewares/errorHandler.ts";
+import { notFoundHandler } from "./middlewares/notFoundHandler.ts";
 import { generateOpenApiDocument } from "./openapi.ts";
 import apiRouter from "./routes/index.ts";
-import { notFoundHandler } from "./middlewares/notFoundHandler.ts";
-import { errorHandler } from "./middlewares/errorHandler.ts";
 
 const app = express();
 
-app.use(pinoHttp());
+app.use(
+  pinoHttp({
+    redact: [
+      "req.headers.authorization",
+      "req.headers.cookie",
+      'res.headers["set-cookie"]',
+    ],
+  }),
+);
 
 app.use(
-    cors({
-        origin: env.allowedOriginsList,
-        credentials: true,
-    }),
+  cors({
+    origin: env.allowedOriginsList,
+    credentials: true,
+  }),
 );
 app.use(cookieParser());
 app.use(express.json());
 
 app.get("/api/health", (_req, res) => {
-    res.status(200).json({
-        status: "ok",
-        timestamp: new Date().toISOString(),
-    });
+  res.status(200).json({
+    status: "ok",
+    timestamp: new Date().toISOString(),
+  });
 });
 
-app.use('/api/users', userRouter);
-
 app.use(
-    "/api-docs",
-    swaggerUi.serve,
-    (
-        _req: express.Request,
-        res: express.Response,
-        next: express.NextFunction,
-    ) => {
-        const openApiDoc = generateOpenApiDocument();
-        return swaggerUi.setup(openApiDoc)(_req, res, next);
-    },
+  "/api-docs",
+  swaggerUi.serve,
+  (
+    _req: express.Request,
+    res: express.Response,
+    next: express.NextFunction,
+  ) => {
+    const openApiDoc = generateOpenApiDocument();
+    return swaggerUi.setup(openApiDoc)(_req, res, next);
+  },
 );
 
 app.use("/api", apiRouter);

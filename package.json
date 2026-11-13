@@ -16,7 +16,8 @@
     "prisma:deploy": "prisma migrate deploy",
     "prisma:seed": "prisma db seed",
     "prisma:studio": "prisma studio",
-    "test:recipes": "node --import tsx --test tests/recipes.test.ts"
+    "test:recipes": "node --import tsx --test tests/recipes.test.ts",
+    "test:users": "node --import tsx --test tests/users.test.ts"
   },
   "dependencies": {
     "@asteasolutions/zod-to-openapi": "^9.1.0",

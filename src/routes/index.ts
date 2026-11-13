@@ -1,6 +1,7 @@
 import { Router } from "express";
 import recipesRouter from "./recipesRouter.ts";
 import testimonialsRouter from "./testimonialsRouter.ts";
+import usersRouter from "./usersRouter.ts";
 
 const apiRouter = Router();
 
@@ -10,6 +11,8 @@ const apiRouter = Router();
 // [BE-04] apiRouter.use('/areas', areasRouter);
 // [BE-04] apiRouter.use('/ingredients', ingredientsRouter);
 // [BE-10] apiRouter.use('/users', usersRouter);
+apiRouter.use("/users", usersRouter);
+
 apiRouter.use("/recipes", recipesRouter);
 
 apiRouter.use("/testimonials", testimonialsRouter);
