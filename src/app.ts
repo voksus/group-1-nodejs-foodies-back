@@ -4,6 +4,7 @@ import express from "express";
 import { pinoHttp } from "pino-http";
 import swaggerUi from "swagger-ui-express";
 import { env } from "./config/env.ts";
+import { logger } from "./logger.ts";
 import { errorHandler } from "./middlewares/errorHandler.ts";
 import { notFoundHandler } from "./middlewares/notFoundHandler.ts";
 import { generateOpenApiDocument } from "./openapi.ts";
@@ -13,6 +14,7 @@ const app = express();
 
 app.use(
   pinoHttp({
+    logger,
     redact: [
       "req.headers.authorization",
       "req.headers.cookie",

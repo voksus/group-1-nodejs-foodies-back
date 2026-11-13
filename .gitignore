@@ -25,5 +25,8 @@ uploads/*
 # Optional raster export; the ER diagram is stored as SVG
 /docs/erd.png
 
+#IDE
+.idea/
+
 *.log
 .DS_Store

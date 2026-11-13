@@ -5,13 +5,14 @@ import { HttpError } from "../errors/HttpError.ts";
 
 export const errorHandler = (
   err: unknown,
-  _req: Request,
+  req: Request,
   res: Response,
   _next: NextFunction,
 ): void => {
   if (err instanceof HttpError) {
     res.status(err.status).json({
       message: err.message,
+      ...(err.errors && { errors: err.errors }),
     });
     return;
   }
@@ -48,9 +49,22 @@ export const errorHandler = (
       });
       return;
     }
+    if (prismaCode === "P2003") {
+      res.status(400).json({
+        message: "Referenced record does not exist",
+      });
+      return;
+    }
   }
 
-  console.error("Unhandled error:", err);
+  if ((err as { type?: string } | null)?.type === "entity.parse.failed") {
+    res.status(400).json({
+      message: "Invalid JSON in request body",
+    });
+    return;
+  }
+
+  req.log.error({ err }, "Unhandled error");
 
   res.status(500).json({
     message: "Internal Server Error",

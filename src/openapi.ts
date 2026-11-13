@@ -72,10 +72,10 @@ registry.registerPath({
   method: "get",
   path: "/api/health",
   tags: ["System"],
-  summary: "Перевірка стану сервера (Healthcheck)",
+  summary: "Health check",
   responses: {
     200: {
-      description: "Сервер працює штатно",
+      description: "Server is running",
       content: {
         "application/json": {
           schema: z.object({
@@ -98,7 +98,7 @@ export const generateOpenApiDocument = () => {
       title: "Foodies REST API",
       version: "1.0.0",
       description:
-        "Автоматично згенерована документація Foodies API (Zod + @asteasolutions/zod-to-openapi).",
+        "Automatically generated Foodies API documentation (Zod + @asteasolutions/zod-to-openapi).",
     },
     servers: [{ url: "/", description: "Current Server" }],
   });

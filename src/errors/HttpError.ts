@@ -1,9 +1,16 @@
+export interface ErrorDetail {
+  path: string;
+  message: string;
+}
+
 export class HttpError extends Error {
   public readonly status: number;
+  public readonly errors?: ErrorDetail[];
 
-  constructor(status: number, message: string) {
+  constructor(status: number, message: string, errors?: ErrorDetail[]) {
     super(message);
     this.status = status;
+    this.errors = errors;
     this.name = "HttpError";
   }
 }
@@ -20,6 +27,7 @@ const defaultMessages: Record<number, string> = {
 export const createHttpError = (
   status: number,
   message = defaultMessages[status] ?? "Error",
+  errors?: ErrorDetail[],
 ): HttpError => {
-  return new HttpError(status, message);
+  return new HttpError(status, message, errors);
 };
