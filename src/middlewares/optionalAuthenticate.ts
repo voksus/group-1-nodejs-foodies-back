@@ -28,21 +28,24 @@ export const optionalAuthenticate = ctrlWrapper(async (req, _res, next) => {
   } catch {
     throw createHttpError(401, "Invalid or expired access token");
   }
+  if (typeof payload === "string") {
+    throw createHttpError(401, "Invalid access token");
+  }
+  const userId = payload.sub ?? payload.id;
   if (
-    typeof payload === "string" ||
-    payload.type !== "access" ||
-    typeof payload.sub !== "string" ||
-    !payload.sub ||
+    (payload.type !== undefined && payload.type !== "access") ||
+    typeof userId !== "string" ||
+    !userId ||
     typeof payload.exp !== "number"
   ) {
     throw createHttpError(401, "Invalid access token");
   }
 
   const user = await prisma.user.findUnique({
-    where: { id: payload.sub },
+    where: { id: userId },
     select: { id: true },
   });
   if (!user) throw createHttpError(401, "Unauthorized");
-  req.user = { sub: user.id };
+  req.user = { id: user.id, sub: user.id };
   next();
 });

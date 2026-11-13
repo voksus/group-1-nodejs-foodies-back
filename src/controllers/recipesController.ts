@@ -7,12 +7,12 @@ import { listPopularRecipes, listRecipes } from "../services/recipesService.ts";
 
 export async function getRecipes(req: Request, res: Response) {
   const query = req.query as unknown as RecipesQuery;
-  const result = await listRecipes(query, req.user?.sub);
+  const result = await listRecipes(query, req.user?.id);
   res.status(200).json(result);
 }
 
 export async function getPopularRecipes(req: Request, res: Response) {
   const { limit } = req.query as unknown as PopularRecipesQuery;
-  const result = await listPopularRecipes(limit, req.user?.sub);
+  const result = await listPopularRecipes(limit, req.user?.id);
   res.status(200).json(result);
 }

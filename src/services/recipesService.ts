@@ -39,7 +39,7 @@ async function addFavorites(
 }
 
 export async function listRecipes(query: RecipesQuery, userId?: string) {
-  const { page, limit, skip } = getPaginationParams(query, 12, 50);
+  const { page, limit, skip } = getPaginationParams(query);
   const where: Prisma.RecipeWhereInput = {};
 
   if (

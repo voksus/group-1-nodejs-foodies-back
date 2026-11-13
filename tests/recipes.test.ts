@@ -1,10 +1,15 @@
 import assert from "node:assert/strict";
 import { randomBytes, randomUUID } from "node:crypto";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
+import type { Server } from "node:http";
 import { after, before, test } from "node:test";
 import { parse } from "dotenv";
+import type { Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import pg from "pg";
+import type { PrismaClient } from "../generated/prisma/client.ts";
+import type { RecipeCard } from "../src/schemas/recipesSchemas.ts";
+import type { PaginatedResponse } from "../src/utils/pagination.ts";
 
 const envPath = new URL("../.env", import.meta.url);
 const localEnv = existsSync(envPath)
@@ -39,25 +44,31 @@ const ids = {
   tomato: "e".repeat(24),
   cocoa: randomUUID(),
 };
-const recipeId = (index) => "a".repeat(20) + String(index).padStart(4, "0");
-let prisma;
-let server;
-let baseUrl;
+const recipeId = (index: number) =>
+  "a".repeat(20) + String(index).padStart(4, "0");
+let prisma: PrismaClient;
+let server: Server;
+let baseUrl: string;
 let created = false;
 
-const token = (userId, options = {}) =>
+const token = (userId: string, options: jwt.SignOptions = {}) =>
   jwt.sign({ sub: userId, type: "access" }, secret, {
     algorithm: "HS256",
     expiresIn: "15m",
     ...options,
   });
-const bearer = (userId) => ({ Authorization: `Bearer ${token(userId)}` });
-async function get(path, headers) {
+const bearer = (userId: string) => ({
+  Authorization: `Bearer ${token(userId)}`,
+});
+async function get<T = PaginatedResponse<RecipeCard>>(
+  path: string,
+  headers?: HeadersInit,
+) {
   const response = await fetch(baseUrl + path, {
     headers,
     signal: AbortSignal.timeout(10000),
   });
-  return { status: response.status, body: await response.json() };
+  return { status: response.status, body: (await response.json()) as T };
 }
 
 before(async () => {
@@ -163,17 +174,21 @@ before(async () => {
     ],
   });
   server = app.listen(0, "127.0.0.1");
-  await new Promise((resolve, reject) => {
-    server.once("listening", resolve);
+  await new Promise<void>((resolve, reject) => {
+    server.once("listening", () => resolve());
     server.once("error", reject);
   });
-  baseUrl = `http://127.0.0.1:${server.address().port}`;
+  const address = server.address();
+  assert(address && typeof address !== "string");
+  baseUrl = `http://127.0.0.1:${address.port}`;
 });
 
 after(async () => {
   if (server) {
     server.closeAllConnections();
-    await new Promise((resolve) => server.close(resolve));
+    await new Promise<void>((resolve, reject) =>
+      server.close((error) => (error ? reject(error) : resolve())),
+    );
   }
   if (prisma) await prisma.$disconnect();
   if (created) await admin.query(`DROP DATABASE "${databaseName}"`);
@@ -209,7 +224,7 @@ test("guest defaults and exact RecipeCard fields", async () => {
 });
 
 test("pages are deterministic, disjoint and complete", async () => {
-  const seen = [];
+  const seen: string[] = [];
   for (let page = 1; page <= 4; page++) {
     const { status, body } = await get(`/api/recipes?page=${page}&limit=5`);
     assert.equal(status, 200);
@@ -228,7 +243,7 @@ test("category accepts original IDs, UUIDs and case-insensitive names", async ()
     [ids.seafood, 8],
     [" sEaFoOd ", 8],
     [ids.dessert, 8],
-  ]) {
+  ] as const) {
     const { status, body } = await get(
       `/api/recipes?${new URLSearchParams({ category: value })}`,
     );
@@ -260,7 +275,7 @@ test("area accepts UUIDs, original IDs and case-insensitive names", async () => 
     [ids.italian, 6],
     ["italian", 6],
     [ids.ukrainian, 10],
-  ]) {
+  ] as const) {
     const { status, body } = await get(
       `/api/recipes?${new URLSearchParams({ area: value })}`,
     );
@@ -273,7 +288,7 @@ test("ingredient filtering uses the join table without duplicate cards", async (
   for (const [ingredient, expected] of [
     [ids.tomato, 9],
     [ids.cocoa, 8],
-  ]) {
+  ] as const) {
     const { status, body } = await get(
       `/api/recipes?${new URLSearchParams({ ingredient })}`,
     );
@@ -365,27 +380,33 @@ test("query validation rejects invalid pagination and filters", async () => {
     "limit[]=2",
     "page[x]=1",
     "limit=0",
-    "limit=51",
+    "limit=101",
     "limit=",
     "ingredient=wrong",
     "category=",
     "area=",
     "category=x&category=y",
   ]) {
-    const { status, body } = await get(`/api/recipes?${query}`);
+    const { status, body } = await get<{ message: string; errors: unknown[] }>(
+      `/api/recipes?${query}`,
+    );
     assert.equal(status, 400, query);
     assert.equal(body.message, "Validation error");
     assert(Array.isArray(body.errors));
   }
-  const { status } = await get("/api/recipes?limit=50");
-  assert.equal(status, 200);
+  for (const limit of [50, 51, 100]) {
+    const { status, body } = await get(`/api/recipes?limit=${limit}`);
+    assert.equal(status, 200);
+    assert.equal(body.limit, limit);
+    assert.equal(body.items.length, 16);
+  }
 });
 
 test("Bearer authentication returns only the current user's favorites", async () => {
   for (const [user, favorites] of [
     [ids.alice, [0, 2, 3]],
     [ids.bob, [0, 3]],
-  ]) {
+  ] as const) {
     const { status, body } = await get("/api/recipes?limit=50", bearer(user));
     assert.equal(status, 200);
     assert.deepEqual(
@@ -406,6 +427,51 @@ test("accessToken cookie authenticates the request", async () => {
   assert.equal(body.items.filter((card) => card.isFavorite).length, 3);
 });
 
+test("access tokens support sub or id, with an optional access type", async () => {
+  for (const payload of [
+    { sub: ids.alice, type: "access" },
+    { sub: ids.alice },
+    { id: ids.alice, type: "access" },
+    { id: ids.alice },
+    { sub: ids.alice, id: ids.bob },
+    { sub: null, id: ids.alice },
+  ]) {
+    const accessToken = jwt.sign(payload, secret, { expiresIn: "15m" });
+    const headers = { Authorization: `Bearer ${accessToken}` };
+    const { status, body } = await get("/api/recipes?limit=100", headers);
+    assert.equal(status, 200);
+    assert.deepEqual(
+      body.items
+        .filter((card) => card.isFavorite)
+        .map((card) => card.id)
+        .sort(),
+      [0, 2, 3].map(recipeId).sort(),
+    );
+    const { status: popularStatus, body: popular } = await get<RecipeCard[]>(
+      "/api/recipes/popular",
+      headers,
+    );
+    assert.equal(popularStatus, 200);
+    assert.deepEqual(
+      popular.map((card) => card.isFavorite),
+      [true, true, true, false],
+    );
+  }
+});
+
+test("optionalAuthenticate exposes both user.id and user.sub", async () => {
+  const { optionalAuthenticate } = await import(
+    "../src/middlewares/optionalAuthenticate.ts"
+  );
+  const req = { get: () => `Bearer ${token(ids.alice)}` } as unknown as Request;
+  await new Promise<void>((resolve, reject) => {
+    optionalAuthenticate(req, {} as Response, (error) =>
+      error ? reject(error) : resolve(),
+    );
+  });
+  assert.deepEqual(req.user, { id: ids.alice, sub: ids.alice });
+});
+
 test("invalid, expired, unsupported and deleted-user tokens return 401", async () => {
   for (const accessToken of [
     "invalid",
@@ -414,8 +480,17 @@ test("invalid, expired, unsupported and deleted-user tokens return 401", async (
     token(randomUUID()),
     jwt.sign({ sub: ids.alice, type: "access" }, secret),
     jwt.sign({ sub: ids.alice, type: "refresh" }, secret, { expiresIn: "7d" }),
-    jwt.sign({ sub: ids.alice }, secret, { expiresIn: "15m" }),
     jwt.sign({ sub: 42, type: "access" }, secret, { expiresIn: "15m" }),
+    ...[
+      {},
+      { id: "" },
+      { id: 42 },
+      { sub: "", id: ids.alice },
+      { sub: 42, id: ids.alice },
+      { id: ids.alice, type: "refresh" },
+      { id: ids.alice, type: null },
+    ].map((payload) => jwt.sign(payload, secret, { expiresIn: "15m" })),
+    jwt.sign({ id: ids.alice }, secret),
     jwt.sign({ sub: ids.alice, type: "access" }, "wrong-signing-secret", {
       expiresIn: "15m",
     }),
@@ -440,7 +515,7 @@ test("an invalid Bearer token is not hidden by a valid cookie", async () => {
 });
 
 test("popular recipes use global favorite counts, a default of four and stable ties", async () => {
-  const { status, body } = await get("/api/recipes/popular");
+  const { status, body } = await get<RecipeCard[]>("/api/recipes/popular");
   assert.equal(status, 200);
   assert(Array.isArray(body));
   assert.deepEqual(
@@ -448,7 +523,7 @@ test("popular recipes use global favorite counts, a default of four and stable t
     [recipeId(0), recipeId(3), recipeId(2), recipeId(1)],
   );
   assert(body.every((card) => card.isFavorite === false));
-  const { body: personalized } = await get(
+  const { body: personalized } = await get<RecipeCard[]>(
     "/api/recipes/popular",
     bearer(ids.bob),
   );
@@ -456,7 +531,9 @@ test("popular recipes use global favorite counts, a default of four and stable t
     personalized.map((card) => card.isFavorite),
     [true, true, false, false],
   );
-  const { body: custom } = await get("/api/recipes/popular?limit=2");
+  const { body: custom } = await get<RecipeCard[]>(
+    "/api/recipes/popular?limit=2",
+  );
   assert.equal(custom.length, 2);
 });
 
@@ -475,36 +552,42 @@ test("Swagger includes query defaults, bounds, nullable cards and optional authe
   const doc = generateOpenApiDocument();
   const search = doc.paths["/api/recipes"].get;
   const popular = doc.paths["/api/recipes/popular"].get;
-  assert.deepEqual(search.parameters.map((param) => param.name).sort(), [
+  assert(search && popular);
+  const searchParams = search.parameters?.filter((param) => "name" in param);
+  const popularParams = popular.parameters?.filter((param) => "name" in param);
+  assert(searchParams && popularParams);
+  const querySchema = (params: typeof searchParams, name: string) => {
+    const param = params.find((param) => param.name === name);
+    assert(param?.schema && !("$ref" in param.schema));
+    return param.schema;
+  };
+  assert.deepEqual(searchParams.map((param) => param.name).sort(), [
     "area",
     "category",
     "ingredient",
     "limit",
     "page",
   ]);
-  const limit = search.parameters.find((param) => param.name === "limit");
-  assert.equal(limit.schema.default, 12);
-  assert.equal(limit.schema.maximum, 50);
-  assert.equal(
-    search.parameters.find((param) => param.name === "page").schema.default,
-    1,
-  );
-  assert.equal(
-    popular.parameters.find((param) => param.name === "limit").schema.default,
-    4,
-  );
+  const limit = querySchema(searchParams, "limit");
+  assert.equal(limit.default, 12);
+  assert.equal(limit.maximum, 100);
+  assert.equal(querySchema(searchParams, "page").default, 1);
+  assert.equal(querySchema(popularParams, "limit").default, 4);
+  assert.equal(querySchema(popularParams, "limit").maximum, 50);
   assert.deepEqual(search.security, [
     { bearerAuth: [] },
     { cookieAuth: [] },
     {},
   ]);
-  assert.equal(
-    doc.components.schemas.RecipeCard.properties.time.nullable,
-    true,
-  );
-  assert.equal(
-    popular.responses[200].content["application/json"].schema.type,
-    "array",
-  );
+  const card = doc.components?.schemas?.RecipeCard;
+  assert(card && "properties" in card);
+  const time = card.properties?.time;
+  assert(time && !("$ref" in time));
+  assert.equal(time.nullable, true);
+  const popularResponse = popular.responses[200];
+  assert("content" in popularResponse);
+  const popularSchema = popularResponse.content?.["application/json"].schema;
+  assert(popularSchema && !("$ref" in popularSchema));
+  assert.equal(popularSchema.type, "array");
   assert.equal((await fetch(`${baseUrl}/api-docs/`)).status, 200);
 });

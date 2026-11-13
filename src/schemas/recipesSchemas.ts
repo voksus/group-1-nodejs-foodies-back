@@ -22,8 +22,8 @@ export const RecipesQuerySchema = PaginationQuerySchema.extend({
     description: "Area ID or exact name (case-insensitive).",
     example: "Italian",
   }),
-  limit: createPositiveIntegerQuerySchema(12, 50).openapi({
-    description: "Recipes per page, from 1 to 50.",
+  limit: PaginationQuerySchema.shape.limit.openapi({
+    description: "Recipes per page, from 1 to 100.",
     example: 12,
   }),
 });
