@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import 'dotenv/config';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -16,6 +17,30 @@ const dataDir = path.join(path.dirname(fileURLToPath(import.meta.url)), 'data');
 
 function readCsv<T extends Record<string, string>>(filename: string): T[] {
   return parse(readFileSync(path.join(dataDir, filename), 'utf8'), {
+=======
+import "dotenv/config";
+import { randomBytes } from "node:crypto";
+import { readFileSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { PrismaPg } from "@prisma/adapter-pg";
+import { hash } from "bcryptjs";
+import { parse } from "csv-parse/sync";
+import { PrismaClient } from "../generated/prisma/client.ts";
+
+const connectionString = process.env.DIRECT_URL ?? process.env.DATABASE_URL;
+if (!connectionString) {
+  throw new Error("Set DIRECT_URL or DATABASE_URL in .env");
+}
+
+const prisma = new PrismaClient({
+  adapter: new PrismaPg({ connectionString }),
+});
+const dataDir = path.join(path.dirname(fileURLToPath(import.meta.url)), "data");
+
+function readCsv<T extends Record<string, string>>(filename: string): T[] {
+  return parse(readFileSync(path.join(dataDir, filename), "utf8"), {
+>>>>>>> main
     bom: true,
     columns: true,
     skip_empty_lines: true,
@@ -23,12 +48,26 @@ function readCsv<T extends Record<string, string>>(filename: string): T[] {
 }
 
 function optional(value: string): string | null {
+<<<<<<< HEAD
   return value.trim() === '' ? null : value;
 }
 
 function requiredId(idsByName: Map<string, string>, name: string, kind: string): string {
   const id = idsByName.get(name);
   if (!id) throw new Error(`Unknown ${kind} in recipes CSV: ${JSON.stringify(name)}`);
+=======
+  return value.trim() === "" ? null : value;
+}
+
+function requiredId(
+  idsByName: Map<string, string>,
+  name: string,
+  kind: string,
+): string {
+  const id = idsByName.get(name);
+  if (!id)
+    throw new Error(`Unknown ${kind} in recipes CSV: ${JSON.stringify(name)}`);
+>>>>>>> main
   return id;
 }
 
@@ -45,6 +84,7 @@ async function insertBatches<T>(
 }
 
 async function main(): Promise<void> {
+<<<<<<< HEAD
   const areas = readCsv<{ id: string; name: string }>('1_areas.csv');
   const categories = readCsv<{ id: string; name: string }>('2_categories.csv');
   const ingredients = readCsv<{
@@ -64,6 +104,44 @@ async function main(): Promise<void> {
   const recipeIngredients = readCsv<{
     recipe_id: string; ingredient_id: string; measure: string;
   }>('7_recipe_ingredients.csv');
+=======
+  const areas = readCsv<{ id: string; name: string }>("1_areas.csv");
+  const categories = readCsv<{ id: string; name: string }>("2_categories.csv");
+  const ingredients = readCsv<{
+    id: string;
+    name: string;
+    description: string;
+    img: string;
+  }>("3_ingredients.csv");
+  const users = readCsv<{
+    id: string;
+    name: string;
+    email: string;
+    avatar: string;
+  }>("4_users.csv");
+  const testimonials = readCsv<{
+    id: string;
+    owner_id: string;
+    testimonial: string;
+  }>("5_testimonials.csv");
+  const recipes = readCsv<{
+    id: string;
+    title: string;
+    category: string;
+    area: string;
+    instructions: string;
+    description: string;
+    thumb: string;
+    preview: string;
+    time: string;
+    owner_id: string;
+  }>("6_recipes.csv");
+  const recipeIngredients = readCsv<{
+    recipe_id: string;
+    ingredient_id: string;
+    measure: string;
+  }>("7_recipe_ingredients.csv");
+>>>>>>> main
 
   const areaIds = new Map(areas.map(({ name, id }) => [name, id]));
   const categoryIds = new Map(categories.map(({ name, id }) => [name, id]));
@@ -81,8 +159,13 @@ async function main(): Promise<void> {
     return {
       id: row.id,
       title: row.title,
+<<<<<<< HEAD
       categoryId: requiredId(categoryIds, row.category, 'category'),
       areaId: requiredId(areaIds, row.area, 'area'),
+=======
+      categoryId: requiredId(categoryIds, row.category, "category"),
+      areaId: requiredId(areaIds, row.area, "area"),
+>>>>>>> main
       instructions: row.instructions,
       description: optional(row.description),
       thumb: optional(row.thumb),
@@ -92,6 +175,7 @@ async function main(): Promise<void> {
     };
   });
 
+<<<<<<< HEAD
   await insertBatches('areas', areas, (data) =>
     prisma.area.createMany({ data, skipDuplicates: true }));
   await insertBatches('categories', categories, (data) =>
@@ -123,6 +207,77 @@ async function main(): Promise<void> {
     ['recipes', await prisma.recipe.count()],
     ['recipe_ingredients', await prisma.recipeIngredient.count()],
   ] as const) console.log(`Total ${label}: ${count}`);
+=======
+  // CSV profiles have no passwords. Use unknown random passwords, never a shared demo login.
+  const userRows = await Promise.all(
+    users.map(async (row) => ({
+      id: row.id,
+      name: row.name,
+      email: row.email.toLowerCase(),
+      avatar: optional(row.avatar),
+      password: await hash(randomBytes(32).toString("hex"), 12),
+    })),
+  );
+
+  await prisma.$transaction(
+    async (tx) => {
+      await insertBatches("areas", areas, (data) =>
+        tx.area.createMany({ data, skipDuplicates: true }),
+      );
+      await insertBatches("categories", categories, (data) =>
+        tx.category.createMany({ data, skipDuplicates: true }),
+      );
+      await insertBatches(
+        "ingredients",
+        ingredients.map((row) => ({
+          id: row.id,
+          name: row.name,
+          desc: optional(row.description),
+          img: optional(row.img),
+        })),
+        (data) => tx.ingredient.createMany({ data, skipDuplicates: true }),
+      );
+      await insertBatches("users", userRows, (data) =>
+        tx.user.createMany({ data, skipDuplicates: true }),
+      );
+      await insertBatches(
+        "testimonials",
+        testimonials.map((row) => ({
+          id: row.id,
+          ownerId: row.owner_id,
+          testimonial: row.testimonial,
+        })),
+        (data) => tx.testimonial.createMany({ data, skipDuplicates: true }),
+      );
+      await insertBatches("recipes", recipeRows, (data) =>
+        tx.recipe.createMany({ data, skipDuplicates: true }),
+      );
+      await insertBatches(
+        "recipe_ingredients",
+        recipeIngredients.map((row) => ({
+          recipeId: row.recipe_id,
+          ingredientId: row.ingredient_id,
+          measure: optional(row.measure),
+        })),
+        (data) =>
+          tx.recipeIngredient.createMany({ data, skipDuplicates: true }),
+      );
+    },
+    { timeout: 60_000 },
+  );
+  console.log("Import transaction committed");
+
+  for (const [label, count] of [
+    ["areas", await prisma.area.count()],
+    ["categories", await prisma.category.count()],
+    ["ingredients", await prisma.ingredient.count()],
+    ["users", await prisma.user.count()],
+    ["testimonials", await prisma.testimonial.count()],
+    ["recipes", await prisma.recipe.count()],
+    ["recipe_ingredients", await prisma.recipeIngredient.count()],
+  ] as const)
+    console.log(`Total ${label}: ${count}`);
+>>>>>>> main
 }
 
 main()

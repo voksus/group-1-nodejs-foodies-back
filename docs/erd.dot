@@ -1,0 +1,25 @@
+digraph ERD {
+  graph [rankdir=LR, bgcolor="white", pad=0.3, nodesep=0.45, ranksep=0.8, splines=polyline, fontname="Arial"];
+  node [shape=plain, fontname="Arial", fontsize=11];
+  edge [color="#0F766E", penwidth=1.3, arrowsize=0.65, fontname="Arial", fontsize=9];
+  users [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="5" COLOR="#BCC7CE"><TR><TD BGCOLOR="#0F766E"><FONT COLOR="white"><B>users</B></FONT></TD></TR><TR><TD ALIGN="LEFT">PK id · varchar(36)</TD></TR><TR><TD ALIGN="LEFT">email · unique</TD></TR><TR><TD ALIGN="LEFT">name, password, avatar?</TD></TR></TABLE>>];
+  refresh [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="5" COLOR="#BCC7CE"><TR><TD BGCOLOR="#0F766E"><FONT COLOR="white"><B>refresh_tokens</B></FONT></TD></TR><TR><TD ALIGN="LEFT">PK id · int</TD></TR><TR><TD ALIGN="LEFT">FK user_id (indexed)</TD></TR><TR><TD ALIGN="LEFT">token · unique</TD></TR><TR><TD ALIGN="LEFT">expires_at, created_at</TD></TR></TABLE>>];
+  recipes [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="5" COLOR="#BCC7CE"><TR><TD BGCOLOR="#0F766E"><FONT COLOR="white"><B>recipes</B></FONT></TD></TR><TR><TD ALIGN="LEFT">PK id · varchar(36)</TD></TR><TR><TD ALIGN="LEFT">FK owner_id</TD></TR><TR><TD ALIGN="LEFT">FK category_id / area_id</TD></TR><TR><TD ALIGN="LEFT">title, instructions, time ...</TD></TR></TABLE>>];
+  categories [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="5" COLOR="#BCC7CE"><TR><TD BGCOLOR="#0F766E"><FONT COLOR="white"><B>categories</B></FONT></TD></TR><TR><TD ALIGN="LEFT">PK id</TD></TR><TR><TD ALIGN="LEFT">name · unique</TD></TR><TR><TD ALIGN="LEFT">description?, thumb?</TD></TR></TABLE>>];
+  areas [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="5" COLOR="#BCC7CE"><TR><TD BGCOLOR="#0F766E"><FONT COLOR="white"><B>areas</B></FONT></TD></TR><TR><TD ALIGN="LEFT">PK id</TD></TR><TR><TD ALIGN="LEFT">name · unique</TD></TR></TABLE>>];
+  ingredients [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="5" COLOR="#BCC7CE"><TR><TD BGCOLOR="#0F766E"><FONT COLOR="white"><B>ingredients</B></FONT></TD></TR><TR><TD ALIGN="LEFT">PK id</TD></TR><TR><TD ALIGN="LEFT">name, img, description</TD></TR></TABLE>>];
+  ri [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="5" COLOR="#BCC7CE"><TR><TD BGCOLOR="#0F766E"><FONT COLOR="white"><B>recipe_ingredients</B></FONT></TD></TR><TR><TD ALIGN="LEFT">PK/FK recipe_id</TD></TR><TR><TD ALIGN="LEFT">PK/FK ingredient_id</TD></TR><TR><TD ALIGN="LEFT">measure</TD></TR></TABLE>>];
+  favorites [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="5" COLOR="#BCC7CE"><TR><TD BGCOLOR="#0F766E"><FONT COLOR="white"><B>favorites</B></FONT></TD></TR><TR><TD ALIGN="LEFT">PK/FK user_id</TD></TR><TR><TD ALIGN="LEFT">PK/FK recipe_id</TD></TR></TABLE>>];
+  follows [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="5" COLOR="#BCC7CE"><TR><TD BGCOLOR="#0F766E"><FONT COLOR="white"><B>follows</B></FONT></TD></TR><TR><TD ALIGN="LEFT">PK/FK follower_id</TD></TR><TR><TD ALIGN="LEFT">PK/FK following_id</TD></TR></TABLE>>];
+  testimonials [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="5" COLOR="#BCC7CE"><TR><TD BGCOLOR="#0F766E"><FONT COLOR="white"><B>testimonials</B></FONT></TD></TR><TR><TD ALIGN="LEFT">PK id</TD></TR><TR><TD ALIGN="LEFT">FK owner_id</TD></TR><TR><TD ALIGN="LEFT">testimonial</TD></TR></TABLE>>];
+  users -> recipes [label="1:N"];
+  users -> refresh [label="1:N"];
+  users -> favorites [label="1:N"];
+  users -> follows [label="1:N (both roles)"];
+  users -> testimonials [label="1:N"];
+  categories -> recipes [label="1:N"];
+  areas -> recipes [label="1:N"];
+  recipes -> ri [label="1:N"];
+  ingredients -> ri [label="1:N"];
+  recipes -> favorites [label="1:N"];
+}
