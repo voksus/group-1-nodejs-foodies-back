@@ -99,6 +99,10 @@ registry.registerPath({
 });
 
 export const generateOpenApiDocument = () => {
+//     const mergedDefinitions = [
+//     ...registry.definitions,
+//     ...userRegistry.definitions,
+//   ];
     const generator = new OpenApiGeneratorV3(registry.definitions);
     return generator.generateDocument({
         openapi: "3.0.0",

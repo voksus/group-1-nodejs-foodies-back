@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import swaggerUi from "swagger-ui-express";
+import userRouter from './routes/userRouter.js';
 import { pinoHttp } from "pino-http";
 import { env } from "./config/env.ts";
 import { generateOpenApiDocument } from "./openapi.ts";
@@ -28,6 +29,8 @@ app.get("/api/health", (_req, res) => {
         timestamp: new Date().toISOString(),
     });
 });
+
+app.use('/api/users', userRouter);
 
 app.use(
     "/api-docs",
