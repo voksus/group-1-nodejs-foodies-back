@@ -11,7 +11,10 @@ const ingredientsFieldSchema = z
     try {
       return JSON.parse(raw) as unknown;
     } catch {
-      ctx.addIssue({ code: "custom", message: "ingredients must be a JSON array" });
+      ctx.addIssue({
+        code: "custom",
+        message: "ingredients must be a JSON array",
+      });
       return z.NEVER;
     }
   })
@@ -30,7 +33,10 @@ const cookingTimeSchema = z.coerce
   .int()
   .min(10)
   .max(1440)
-  .refine((minutes) => minutes % 10 === 0, "Cooking time must be a multiple of 10");
+  .refine(
+    (minutes) => minutes % 10 === 0,
+    "Cooking time must be a multiple of 10",
+  );
 
 export const CreateRecipeSchema = z.object({
   title: z.string().trim().min(1).max(255),

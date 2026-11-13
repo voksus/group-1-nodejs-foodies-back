@@ -74,37 +74,37 @@ export const createPaginatedSchema = <T extends z.ZodType>(
 };
 
 registry.registerPath({
-    method: "get",
-    path: "/api/health",
-    tags: ["System"],
-    summary: "Health check",
-    responses: {
-        200: {
-            description: "Server is running",
-            content: {
-                "application/json": {
-                    schema: z.object({
-                        status: z.string().openapi({ example: "ok" }),
-                        timestamp: z
-                            .string()
-                            .openapi({ example: "2026-11-11T12:00:00.000Z" }),
-                    }),
-                },
-            },
+  method: "get",
+  path: "/api/health",
+  tags: ["System"],
+  summary: "Health check",
+  responses: {
+    200: {
+      description: "Server is running",
+      content: {
+        "application/json": {
+          schema: z.object({
+            status: z.string().openapi({ example: "ok" }),
+            timestamp: z
+              .string()
+              .openapi({ example: "2026-11-11T12:00:00.000Z" }),
+          }),
         },
+      },
     },
+  },
 });
 
 export const generateOpenApiDocument = () => {
-    const generator = new OpenApiGeneratorV3(registry.definitions);
-    return generator.generateDocument({
-        openapi: "3.0.0",
-        info: {
-            title: "Foodies REST API",
-            version: "1.0.0",
-            description:
-                "Automatically generated Foodies API documentation (Zod + @asteasolutions/zod-to-openapi).",
-        },
-        servers: [{ url: "/", description: "Current Server" }],
-    });
+  const generator = new OpenApiGeneratorV3(registry.definitions);
+  return generator.generateDocument({
+    openapi: "3.0.0",
+    info: {
+      title: "Foodies REST API",
+      version: "1.0.0",
+      description:
+        "Automatically generated Foodies API documentation (Zod + @asteasolutions/zod-to-openapi).",
+    },
+    servers: [{ url: "/", description: "Current Server" }],
+  });
 };

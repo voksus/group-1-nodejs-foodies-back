@@ -1,7 +1,11 @@
 import { unlink } from "node:fs/promises";
 import type { NextFunction, Request, Response } from "express";
 
-export const removeTempUpload = (req: Request, res: Response, next: NextFunction): void => {
+export const removeTempUpload = (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): void => {
   const filePath = req.file?.path;
 
   if (filePath) {

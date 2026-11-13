@@ -4,7 +4,9 @@ import { logger } from "./logger.ts";
 
 const server = app.listen(env.PORT, () => {
   logger.info(`Server is running on http://localhost:${env.PORT}`);
-  logger.info(`Swagger docs available at http://localhost:${env.PORT}/api-docs`);
+  logger.info(
+    `Swagger docs available at http://localhost:${env.PORT}/api-docs`,
+  );
 });
 
 const shutdown = (signal: string): void => {

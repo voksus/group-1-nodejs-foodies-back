@@ -22,12 +22,22 @@ const recipeInclude = {
   },
 } satisfies Prisma.RecipeInclude;
 
-type RecipeWithDetails = Prisma.RecipeGetPayload<{ include: typeof recipeInclude }>;
+type RecipeWithDetails = Prisma.RecipeGetPayload<{
+  include: typeof recipeInclude;
+}>;
 
-export const findReferenceErrors = async (input: CreateRecipeInput): Promise<ReferenceIssue[]> => {
+export const findReferenceErrors = async (
+  input: CreateRecipeInput,
+): Promise<ReferenceIssue[]> => {
   const [category, area, ingredients] = await Promise.all([
-    prisma.category.findUnique({ where: { id: input.categoryId }, select: { id: true } }),
-    prisma.area.findUnique({ where: { id: input.areaId }, select: { id: true } }),
+    prisma.category.findUnique({
+      where: { id: input.categoryId },
+      select: { id: true },
+    }),
+    prisma.area.findUnique({
+      where: { id: input.areaId },
+      select: { id: true },
+    }),
     prisma.ingredient.findMany({
       where: { id: { in: input.ingredients.map((item) => item.id) } },
       select: { id: true },
@@ -43,10 +53,15 @@ export const findReferenceErrors = async (input: CreateRecipeInput): Promise<Ref
     errors.push({ path: "areaId", message: "Unknown area" });
   }
 
-  const knownIngredientIds = new Set(ingredients.map((ingredient) => ingredient.id));
+  const knownIngredientIds = new Set(
+    ingredients.map((ingredient) => ingredient.id),
+  );
   input.ingredients.forEach((item, index) => {
     if (!knownIngredientIds.has(item.id)) {
-      errors.push({ path: `ingredients[${index}].id`, message: "Unknown ingredient" });
+      errors.push({
+        path: `ingredients[${index}].id`,
+        message: "Unknown ingredient",
+      });
     }
   });
 
@@ -110,7 +125,9 @@ const toRecipeResponse = (recipe: RecipeWithDetails) => ({
   updatedAt: recipe.updatedAt,
 });
 
-export const findRecipeOwnerId = async (recipeId: string): Promise<string | null> => {
+export const findRecipeOwnerId = async (
+  recipeId: string,
+): Promise<string | null> => {
   const recipe = await prisma.recipe.findUnique({
     where: { id: recipeId },
     select: { ownerId: true },

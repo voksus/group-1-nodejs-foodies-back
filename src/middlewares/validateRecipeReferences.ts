@@ -6,7 +6,9 @@ import type { CreateRecipeInput } from "../validators/recipeValidator.ts";
 
 export const validateRecipeReferences = ctrlWrapper(
   async (req: Request, _res: Response, next: NextFunction) => {
-    const errors = await recipeService.findReferenceErrors(req.body as CreateRecipeInput);
+    const errors = await recipeService.findReferenceErrors(
+      req.body as CreateRecipeInput,
+    );
 
     if (errors.length > 0) {
       throw createHttpError(400, "Validation error", errors);

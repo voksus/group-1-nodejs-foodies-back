@@ -9,7 +9,10 @@ import { validateImageContent } from "../middlewares/validateImageContent.ts";
 import { validateRecipeReferences } from "../middlewares/validateRecipeReferences.ts";
 import { validateRequest } from "../middlewares/validateRequest.ts";
 import { ctrlWrapper } from "../utils/ctrlWrapper.ts";
-import { CreateRecipeSchema, RecipeIdParamsSchema } from "../validators/recipeValidator.ts";
+import {
+  CreateRecipeSchema,
+  RecipeIdParamsSchema,
+} from "../validators/recipeValidator.ts";
 
 const recipeRouter = Router();
 

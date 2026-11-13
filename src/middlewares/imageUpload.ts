@@ -8,7 +8,9 @@ export const imageUpload = multer({
   limits: { fileSize: 5 * 1024 * 1024, files: 1 },
   fileFilter: (_req, file, callback) => {
     if (!ALLOWED_IMAGE_TYPES.includes(file.mimetype)) {
-      return callback(createHttpError(415, "Only JPEG, PNG and WebP images are allowed"));
+      return callback(
+        createHttpError(415, "Only JPEG, PNG and WebP images are allowed"),
+      );
     }
 
     callback(null, true);

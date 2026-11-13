@@ -33,16 +33,25 @@ const CreateRecipeMultipartSchema = registry.register(
   "CreateRecipeMultipart",
   z.object({
     title: z.string().openapi({ example: "Salmon avocado salad" }),
-    description: z.string().openapi({ example: "A healthy salad with salmon and avocado." }),
+    description: z
+      .string()
+      .openapi({ example: "A healthy salad with salmon and avocado." }),
     instructions: z.string(),
     categoryId: z.string().openapi({ example: "6462a8f74c3d0ddd28897fcd" }),
     areaId: z.string().openapi({ example: "6462a8f74c3d0ddd28897fcd" }),
-    time: z.string().openapi({ example: "40", description: "Minutes, 10–1440, multiple of 10" }),
+    time: z.string().openapi({
+      example: "40",
+      description: "Minutes, 10–1440, multiple of 10",
+    }),
     ingredients: z.string().openapi({
       example: '[{"id":"6462a8f74c3d0ddd28897fcd","measure":"400 g"}]',
-      description: "JSON array of { id, measure }. Each ingredient at least once.",
+      description:
+        "JSON array of { id, measure }. Each ingredient at least once.",
     }),
-    thumb: z.string().openapi({ format: "binary", description: "JPEG, PNG or WebP, max 5 MB" }),
+    thumb: z.string().openapi({
+      format: "binary",
+      description: "JPEG, PNG or WebP, max 5 MB",
+    }),
   }),
 );
 
@@ -66,7 +75,8 @@ registry.registerPath({
       content: { "application/json": { schema: RecipeSchema } },
     },
     400: {
-      description: "Validation error, missing image, or unknown category, area, or ingredient ID",
+      description:
+        "Validation error, missing image, or unknown category, area, or ingredient ID",
       content: { "application/json": { schema: ErrorResponseSchema } },
     },
     401: {
@@ -84,7 +94,9 @@ registry.registerPath({
   security: [{ bearerAuth: [] }],
   request: {
     params: z.object({
-      id: z.string().openapi({ example: "3f9c1e7a-2b4d-4c8e-9a1f-6d5b7e8c9a0b" }),
+      id: z
+        .string()
+        .openapi({ example: "3f9c1e7a-2b4d-4c8e-9a1f-6d5b7e8c9a0b" }),
     }),
   },
   responses: {
