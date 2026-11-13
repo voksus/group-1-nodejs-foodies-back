@@ -4,6 +4,7 @@ import {
   OpenApiGeneratorV3,
 } from "@asteasolutions/zod-to-openapi";
 import { z } from "zod";
+import { createPositiveIntegerQuerySchema } from "./schemas/commonSchemas.ts";
 
 extendZodWithOpenApi(z);
 
@@ -47,14 +48,8 @@ export const ErrorResponseSchema = registry.register(
 );
 
 export const PaginationQuerySchema = z.object({
-  page: z.coerce.number().int().min(1).default(1).openapi({ example: 1 }),
-  limit: z.coerce
-    .number()
-    .int()
-    .min(1)
-    .max(100)
-    .default(12)
-    .openapi({ example: 12 }),
+  page: createPositiveIntegerQuerySchema(1).openapi({ example: 1 }),
+  limit: createPositiveIntegerQuerySchema(12, 100).openapi({ example: 12 }),
 });
 
 export const createPaginatedSchema = <T extends z.ZodType>(
