@@ -3,16 +3,16 @@ import { registry } from "../openapi.ts";
 
 export const AreaSchema = z.object({
   id: z.string().openapi({
-    description: "Унікальний ідентифікатор регіону",
+    description: "Unique identifier of the area",
     example: "6462a6f04c3d0ddd28897f9b",
   }),
   name: z.string().openapi({
-    description: "Назва регіону походження",
+    description: "Name of the culinary area or region",
     example: "Ukrainian",
   }),
 });
 
 export const AreasResponseSchema = registry.register(
   "AreasResponse",
-  z.array(AreaSchema)
-);  
+  z.array(AreaSchema),
+);

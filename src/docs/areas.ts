@@ -5,11 +5,11 @@ registry.registerPath({
   method: "get",
   path: "/api/areas",
   tags: ["Areas"],
-  summary: "Отримати список усіх регіонів",
-  description: "Повертає повний список регіонів походження страв без дублікатів.",
+  summary: "Get all areas",
+  description: "Returns a complete list of unique dish origin areas.",
   responses: {
     200: {
-      description: "Масив об'єктів регіонів",
+      description: "Array of area objects",
       content: {
         "application/json": { schema: AreasResponseSchema },
       },
