@@ -1,12 +1,9 @@
 import {
-  extendZodWithOpenApi,
   OpenAPIRegistry,
   OpenApiGeneratorV3,
 } from "@asteasolutions/zod-to-openapi";
-import { z } from "zod";
 import { createPositiveIntegerQuerySchema } from "./schemas/commonSchemas.ts";
-
-extendZodWithOpenApi(z);
+import { z } from "./utils/zod.ts";
 
 export const registry = new OpenAPIRegistry();
 

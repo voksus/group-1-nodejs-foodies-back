@@ -176,6 +176,16 @@ Both endpoints allow guests. Optional authentication uses an HS256 access token 
 
 Run `npm run test:recipes` with local PostgreSQL running. The integration tests use `.env`'s local `DATABASE_URL` (or `TEST_DATABASE_URL`), create a separate temporary database, and drop it afterward. They do not reset the development database or use Neon.
 
+### Favorites
+
+The following routes require an access token in the Bearer header or `accessToken` cookie:
+
+- `GET /api/recipes/favorites?page=1&limit=9` returns the current user's favorites as `{ items, total, page, limit, totalPages }`. The default limit is 9, with a maximum of 100. Cards use the same fields as recipe search, with `isFavorite: true`, ordered by recipe creation date descending and ID ascending.
+- `POST /api/recipes/:id/favorite` adds a favorite and returns `200 { "message": "Recipe added to favorites" }`, including repeated requests. A missing recipe returns 404.
+- `DELETE /api/recipes/:id/favorite` removes only the current user's favorite and returns `200 { "message": "Recipe removed from favorites" }`. Repeating a removal or removing an unknown recipe also returns 200.
+
+Recipe IDs accept the original 24-character hex format and UUIDs. Invalid parameters return 400; missing or invalid authentication returns 401. All three routes are documented in Swagger.
+
 ## Version control
 
 Commit `prisma/schema.prisma`, `prisma/migrations/` including `migration_lock.toml`, `prisma/seed.ts`, `prisma/data/*.csv`, Prisma config, `package.json`, `package-lock.json`, `.env.example`, and the documentation. Do not commit environment files with credentials, generated client artifacts, or `node_modules`.

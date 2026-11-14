@@ -1,9 +1,9 @@
-import { z } from "zod";
 import {
   createPaginatedSchema,
   PaginationQuerySchema,
   registry,
 } from "../openapi.ts";
+import { z } from "../utils/zod.ts";
 import { createPositiveIntegerQuerySchema, IdSchema } from "./commonSchemas.ts";
 
 const filterSchema = z.string().trim().min(1);

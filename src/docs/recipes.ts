@@ -1,4 +1,3 @@
-import { z } from "zod";
 import { registry } from "../openapi.ts";
 import {
   PaginatedRecipesSchema,
@@ -6,13 +5,9 @@ import {
   RecipeCardSchema,
   RecipesQuerySchema,
 } from "../schemas/recipesSchemas.ts";
+import { z } from "../utils/zod.ts";
 import { errorResponses } from "./errorResponses.ts";
-
-const optionalSecurity: Record<string, string[]>[] = [
-  { bearerAuth: [] },
-  { cookieAuth: [] },
-  {},
-];
+import { optionalSecurity } from "./security.ts";
 
 registry.registerPath({
   method: "get",

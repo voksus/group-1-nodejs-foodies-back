@@ -1,9 +1,12 @@
-import type { Prisma } from "../../generated/prisma/client.ts";
+import { Prisma } from "../../generated/prisma/client.ts";
 import { prisma } from "../db.ts";
+import { createHttpError } from "../errors/HttpError.ts";
+import type { FavoritesQuery } from "../schemas/favoritesSchemas.ts";
 import type { RecipeCard, RecipesQuery } from "../schemas/recipesSchemas.ts";
 import {
   formatPaginatedResponse,
   getPaginationParams,
+  type PaginationQuery,
 } from "../utils/pagination.ts";
 
 const cardSelect = {
@@ -39,7 +42,6 @@ async function addFavorites(
 }
 
 export async function listRecipes(query: RecipesQuery, userId?: string) {
-  const { page, limit, skip } = getPaginationParams(query);
   const where: Prisma.RecipeWhereInput = {};
 
   if (
@@ -69,7 +71,18 @@ export async function listRecipes(query: RecipesQuery, userId?: string) {
     where.ingredients = { some: { ingredientId: query.ingredient } };
   }
 
-  const { records, total } = await prisma.$transaction(
+  const { records, total, page, limit } = await getRecipePage(where, query);
+  const items = await addFavorites(records, userId);
+  return formatPaginatedResponse(items, total, page, limit);
+}
+
+async function getRecipePage(
+  where: Prisma.RecipeWhereInput,
+  query: PaginationQuery,
+  defaultLimit = 12,
+) {
+  const { page, limit, skip } = getPaginationParams(query, defaultLimit);
+  const result = await prisma.$transaction(
     async (tx) => {
       const total = await tx.recipe.count({ where });
       const records =
@@ -87,8 +100,7 @@ export async function listRecipes(query: RecipesQuery, userId?: string) {
     { isolationLevel: "RepeatableRead" },
   );
 
-  const items = await addFavorites(records, userId);
-  return formatPaginatedResponse(items, total, page, limit);
+  return { ...result, page, limit };
 }
 
 export async function listPopularRecipes(limit: number, userId?: string) {
@@ -98,4 +110,47 @@ export async function listPopularRecipes(limit: number, userId?: string) {
     take: limit,
   });
   return addFavorites(records, userId);
+}
+
+export async function listFavoriteRecipes(
+  query: FavoritesQuery,
+  userId: string,
+) {
+  const { records, total, page, limit } = await getRecipePage(
+    { favorites: { some: { userId } } },
+    query,
+    9,
+  );
+  const items = records.map((record) => ({ ...record, isFavorite: true }));
+  return formatPaginatedResponse(items, total, page, limit);
+}
+
+async function assertRecipeExists(recipeId: string) {
+  const recipe = await prisma.recipe.findUnique({
+    where: { id: recipeId },
+    select: { id: true },
+  });
+  if (!recipe) throw createHttpError(404, "Recipe not found");
+}
+
+export async function addFavoriteRecipe(recipeId: string, userId: string) {
+  await assertRecipeExists(recipeId);
+  try {
+    await prisma.favorite.createMany({
+      data: [{ recipeId, userId }],
+      skipDuplicates: true,
+    });
+  } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2003"
+    ) {
+      await assertRecipeExists(recipeId);
+    }
+    throw error;
+  }
+}
+
+export async function removeFavoriteRecipe(recipeId: string, userId: string) {
+  await prisma.favorite.deleteMany({ where: { recipeId, userId } });
 }
